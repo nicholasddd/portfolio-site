@@ -1,11 +1,17 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+// OrbitControls are removed for the fixed isometric follow-cam
+// import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+// --- Global Variables ---
 let camera, scene, renderer, snowball;
 const clock = new THREE.Clock();
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 const clickableFrames = []; // Keep track of clickable objects
+
+// --- Camera Configuration ---
+const frustumSize = 25; // *** ADJUST this value to zoom in/out ***
+const isometricOffset = new THREE.Vector3(20, 20, 20); // *** ADJUST x,y,z for camera angle/distance ***
 
 // --- Modal Elements ---
 const overlay = document.getElementById('overlay');
@@ -15,70 +21,78 @@ const modalImage = document.getElementById('modal-image');
 const closeModalButton = document.getElementById('close-modal');
 // const modalLink = document.getElementById('modal-link'); // Optional link
 
+// --- Initialization and Animation ---
 init();
 animate();
 
+// --- Initialization Function ---
 function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xaaccff); // Light blue background
 
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 5, 20); // Initial camera position
+    // --- Camera: Orthographic for Isometric View ---
+    const aspect = window.innerWidth / window.innerHeight;
+    camera = new THREE.OrthographicCamera(
+        frustumSize * aspect / -2,
+        frustumSize * aspect / 2,
+        frustumSize / 2,
+        frustumSize / -2,
+        1,          // Near plane
+        1000        // Far plane
+    );
+    // Camera position is set later, relative to the snowball's starting point
 
+    // --- Renderer ---
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // --- Controls ---
-    // Note: You disabled pan/zoom. Re-enable if needed for exploration.
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enablePan = false;
-    controls.enableZoom = false;
-    // controls.target.set(0, 1, 0); // Optional: Focus controls slightly above ground
-    // controls.update();
+    // --- Controls: Removed ---
+    // OrbitControls are not used for the fixed follow-camera setup.
 
     // --- Lighting ---
-    const light = new THREE.DirectionalLight(0xffffff, 1.5); // Slightly brighter light
+    const light = new THREE.DirectionalLight(0xffffff, 1.5);
     light.position.set(5, 20, 10);
     scene.add(light);
 
-    const ambient = new THREE.AmbientLight(0xcccccc, 0.8); // Slightly brighter ambient
+    const ambient = new THREE.AmbientLight(0xcccccc, 0.8);
     scene.add(ambient);
 
     // --- Ground ---
     const ground = new THREE.Mesh(
         new THREE.PlaneGeometry(100, 100),
-        // Use MeshStandardMaterial for better lighting interaction if desired
         new THREE.MeshLambertMaterial({ color: 0xffffff })
     );
-    ground.rotation.x = -Math.PI / 2; // Rotate to be horizontal
+    ground.rotation.x = -Math.PI / 2;
     scene.add(ground);
 
     // --- Snowball ---
-    // Reduced segments for a more low-poly look
-    const ballGeo = new THREE.SphereGeometry(1, 12, 8);
-    // Use MeshStandardMaterial for potentially better look
+    const ballGeo = new THREE.SphereGeometry(1, 12, 8); // Lower poly
     const ballMat = new THREE.MeshStandardMaterial({
         color: 0xffffff,
-        roughness: 0.8, // Less shiny
+        roughness: 0.8,
         metalness: 0.1
      });
     snowball = new THREE.Mesh(ballGeo, ballMat);
-    snowball.position.y = 1; // Place it on the ground
+    snowball.position.y = 1; // Place it on the ground (initial x/z is 0)
     scene.add(snowball);
 
+    // --- Set Initial Camera Position & LookAt ---
+    // Position the camera based on the snowball's STARTING position + offset
+    // This ensures the camera starts looking at the snowball correctly
+    camera.position.copy(snowball.position).add(isometricOffset);
+    camera.lookAt(snowball.position); // Make camera point at the snowball
+
     // --- Trees (Low Poly Cones) ---
-    const treeMat = new THREE.MeshLambertMaterial({ color: 0x226622 }); // Dark green
-    const treeGeo = new THREE.ConeGeometry(1, 4, 8); // Base radius, height, segments
+    const treeMat = new THREE.MeshLambertMaterial({ color: 0x226622 });
+    const treeGeo = new THREE.ConeGeometry(1, 4, 8);
     for (let i = 0; i < 30; i++) {
         const tree = new THREE.Mesh(treeGeo, treeMat);
-        // Position randomly, ensuring they stand on the ground (y=height/2)
         tree.position.set(
             (Math.random() - 0.5) * 80,
-            2, // Cone geometry origin is center, so height/2 puts base on ground
+            2, // Cone base on ground (height/2)
             (Math.random() - 0.5) * 80
         );
-        tree.castShadow = true; // Optional: if you add shadows later
         scene.add(tree);
     }
 
@@ -92,22 +106,20 @@ function init() {
         })
         .then(projects => {
             const textureLoader = new THREE.TextureLoader();
-            const frameGeo = new THREE.PlaneGeometry(3, 3.5); // Adjust aspect ratio if needed
+            const frameGeo = new THREE.PlaneGeometry(3, 3.5);
 
             projects.forEach((proj) => {
                 const texture = textureLoader.load(proj.image);
-                // Use MeshLambertMaterial so it reacts to light like other objects
                 const frameMat = new THREE.MeshLambertMaterial({ map: texture, side: THREE.DoubleSide });
                 const frame = new THREE.Mesh(frameGeo, frameMat);
 
-                // Position randomly, slightly above ground & tilted like a photo
                 frame.position.set(
-                    (Math.random() - 0.5) * 70, // Slightly smaller range than trees
-                    1.75, // Centered height of the frame
+                    (Math.random() - 0.5) * 70,
+                    1.75,
                     (Math.random() - 0.5) * 70
                  );
-                // frame.rotation.x = -Math.PI / 12; // Slight tilt back
-                frame.lookAt(camera.position); // Make frame initially face camera (or 0,0,0)
+                // Optional: Make frames face the camera initially or keep them fixed
+                // frame.lookAt(camera.position); // If enabled, they will turn as camera moves in animate()
 
                 frame.userData = proj; // Store project data
                 scene.add(frame);
@@ -116,27 +128,45 @@ function init() {
         })
         .catch(error => {
             console.error("Error loading projects.json:", error);
-            // Handle error display to the user if needed
          });
 
     // --- Event Listeners ---
     window.addEventListener('resize', onWindowResize);
     window.addEventListener('click', onClick);
-    closeModalButton.addEventListener('click', hideModal);
-    overlay.addEventListener('click', (event) => {
-        // Close modal if clicked outside the content area
-        if (event.target === overlay) {
-            hideModal();
-        }
-    });
+
+    // --- Modal Event Listeners ---
+    // Ensure these run after the modal elements exist in the DOM
+    if (closeModalButton) {
+        closeModalButton.addEventListener('click', hideModal);
+    } else {
+        console.error("Could not find close modal button with ID 'close-modal'");
+    }
+    if (overlay) {
+        overlay.addEventListener('click', (event) => {
+            // Close modal only if the click is on the overlay background itself
+            if (event.target === overlay) {
+                hideModal();
+            }
+        });
+    } else {
+         console.error("Could not find overlay element with ID 'overlay'");
+    }
 }
 
+// --- Resize Handler ---
 function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
+    // Update Orthographic Camera parameters on resize
+    const aspect = window.innerWidth / window.innerHeight;
+    camera.left = frustumSize * aspect / -2;
+    camera.right = frustumSize * aspect / 2;
+    camera.top = frustumSize / 2;
+    camera.bottom = frustumSize / -2;
+    camera.updateProjectionMatrix(); // Crucial for Orthographic resize
+
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+// --- Click Handler (Raycasting) ---
 function onClick(event) {
     // Calculate mouse position in normalized device coordinates (-1 to +1)
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -146,7 +176,6 @@ function onClick(event) {
     raycaster.setFromCamera(mouse, camera);
 
     // Calculate objects intersecting the picking ray
-    // Intersect only the clickable frames for efficiency
     const intersects = raycaster.intersectObjects(clickableFrames);
 
     if (intersects.length > 0) {
@@ -157,54 +186,57 @@ function onClick(event) {
     }
 }
 
+// --- Modal Display Functions ---
 function showModal(data) {
+    // Check if modal elements exist before trying to set properties
+    if (!modalTitle || !modalDescription || !modalImage || !overlay) {
+        console.error("Modal elements not found. Cannot show modal.");
+        return;
+    }
     modalTitle.textContent = data.title || 'No Title';
     modalDescription.textContent = data.description || 'No Description';
     modalImage.src = data.image || '';
     modalImage.alt = data.title || 'Project Image';
     // Optional: Set link
-    // if (data.url) {
+    // if (data.url && modalLink) {
     //     modalLink.href = data.url;
     //     modalLink.style.display = 'inline-block';
-    // } else {
+    // } else if (modalLink) {
     //     modalLink.style.display = 'none';
     // }
 
-    overlay.classList.remove('hidden');
+    overlay.classList.remove('hidden'); // Show the modal
 }
 
 function hideModal() {
-    overlay.classList.add('hidden');
-    // Optional: Reset modal content if needed
-    // modalTitle.textContent = '';
-    // modalDescription.textContent = '';
-    // modalImage.src = '';
-    // modalLink.href='#';
+     if (overlay) {
+        overlay.classList.add('hidden'); // Hide the modal
+     }
 }
 
+// --- Animation Loop ---
 function animate() {
-    requestAnimationFrame(animate);
+    requestAnimationFrame(animate); // Loop animation
 
-    const delta = clock.getDelta(); // Time since last frame (useful for consistent speed)
+    const delta = clock.getDelta(); // Time since last frame
     const t = clock.getElapsedTime(); // Total time elapsed
 
-    // --- Snowball Movement (Current: Circular Path) ---
-    // TODO: Replace this with your desired movement logic (e.g., keyboard input)
-    snowball.position.x = Math.sin(t * 0.5) * 10; // Slower rotation
+    // --- Snowball Movement ---
+    // Update snowball position first based on time or user input
+    snowball.position.x = Math.sin(t * 0.5) * 10; // Example: circular motion
     snowball.position.z = Math.cos(t * 0.5) * 10;
 
-    // Add rolling animation if snowball moves
-    // Example: If moving along Z, rotate around X
-    // snowball.rotation.x += movementSpeed * delta; // Adjust axis based on direction
+    // --- Camera Following ---
+    // Update camera position to follow the snowball, maintaining the offset
+    camera.position.copy(snowball.position).add(isometricOffset);
+    // Ensure the camera always points at the snowball's current position
+    camera.lookAt(snowball.position);
 
-    // Update controls if they change (e.g., target follows snowball)
-    // controls.update();
-
-    // Make frames always face the camera (optional "Billboard" effect)
+    // Optional: Make frames always face the camera ("Billboard" effect)
     // clickableFrames.forEach(frame => {
     //     frame.lookAt(camera.position);
     // });
 
-
+    // --- Render the Scene ---
     renderer.render(scene, camera);
 }
