@@ -1,6 +1,5 @@
-// ✅ Three.js with working OrbitControls (unpkg version)
-import * as THREE from 'https://unpkg.com/three@0.150.1/build/three.module.js';
-import { OrbitControls } from 'https://unpkg.com/three@0.150.1/examples/jsm/controls/OrbitControls.js';
+import * as THREE from 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r150/build/three.module.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r150/examples/jsm/controls/OrbitControls.js';
 
 console.log("✅ scene.js loaded");
 
