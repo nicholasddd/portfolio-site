@@ -5,7 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>3D Snowball Portfolio</title>
   <link rel="stylesheet" href="style.css">
-  <script type="module" src="scene.js" defer></script>
+
+  <!-- ✅ Use global versions of Three.js and OrbitControls -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/controls/OrbitControls.min.js"></script>
+
+  <!-- ✅ Load your main scene script -->
+  <script src="scene.js" defer></script>
 </head>
 <body>
   <div id="overlay" class="hidden">
