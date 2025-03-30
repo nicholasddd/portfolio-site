@@ -1,5 +1,28 @@
-import * as THREE from 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r150/build/three.module.js';
-import { OrbitControls } from 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r150/examples/jsm/controls/OrbitControls.js';
+let camera, scene, renderer, snowball;
+const clock = new THREE.Clock();
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+init();
+animate();
+
+function init() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xaaccff);
+
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 5, 20);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enablePan = false;
+  controls.enableZoom = false;
+
+  // Add your scene elements here...
+}
 
 console.log("✅ scene.js loaded");
 
