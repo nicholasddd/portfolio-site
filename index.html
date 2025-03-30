@@ -1,27 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>3D Snowball Portfolio</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/controls/OrbitControls.min.js"></script>
-  <script>
-    window.addEventListener("load", () => {
-      THREE.OrbitControls = THREE.OrbitControls || window.OrbitControls;
-    });
-  </script>
-  <script src="scene.js" defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snowball Portfolio</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.163.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.163.0/examples/jsm/"
+        }
+    }
+    </script>
 </head>
 <body>
-  <div id="overlay" class="hidden">
-    <div id="modal">
-      <h2 id="modal-title"></h2>
-      <img id="modal-image" />
-      <p id="modal-description"></p>
-      <button onclick="document.getElementById('overlay').classList.add('hidden')">Close</button>
+    <div id="overlay" class="hidden">
+        <div id="modal-content">
+            <button id="close-modal" aria-label="Close modal">&times;</button>
+            <img id="modal-image" src="" alt="Project Image">
+            <h2 id="modal-title"></h2>
+            <p id="modal-description"></p>
+            </div>
     </div>
-  </div>
+
+    <script type="module" src="script.js"></script>
 </body>
 </html>
